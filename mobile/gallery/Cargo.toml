@@ -21,7 +21,7 @@ anyhow = "1"
 ely-gpui-component = { path = "../..", default-features = false, features = ["fonts"] }
 futures = "0.3"
 gpui = { package = "gpui-pre", version = "=0.3.10", default-features = false }
-gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "f62abb51ce015376920aa58385e466c79c7ae2f6" }
+gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "dc82a1e270b905cd5921f0beb5986c6bee0566e4" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 jiff = "0.2"
 log = "0.4"
@@ -34,9 +34,9 @@ web-time = "1.1"
 android_logger = "0.15"
 android-activity = { version = "0.6", features = ["native-activity"] }
 
+# Quick to rebuild while checking pages by touch; a store build would take fat LTO.
 [profile.release]
-opt-level = "z"
-lto = "fat"
-codegen-units = 1
+opt-level = "s"
+lto = "thin"
 strip = true
 panic = "abort"
