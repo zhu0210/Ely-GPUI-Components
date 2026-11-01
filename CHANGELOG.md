@@ -11,6 +11,7 @@ What changes for an app built on Ely, newest first. An entry names the crates it
 - `ely-core`: `SegmentedControl::on_context` hears a right press on a segment, with its value and the pointer, as `Tabs::on_context` does; the press stops on the segment, so the focus stays where it was.
 - `ely-core`: adds the Vietnamese `vi-VN` locale and Vietnamese component messages; the gallery's i18n page holds a Vietnamese catalog.
 - `ely-core`: adds the Spanish `es-ES` locale and Spanish component messages.
+- `ely-core`: a long press opens a `ContextMenu` where it lands, as a right click does, so a touch screen reaches every context menu; a text field inside takes its own long press first.
 - `ely-core`: a long press on a `TextInput`'s text focuses it and selects the word under it, as a double click does, and dragging on extends the selection; the press is claimed, so it no longer pans the page or lands as a tap.
 - `ely-documents`: in `MarkdownDocument`'s visual view, F6 and Shift+F6 move focus to the nearest stop outside the document, so a keyboard user leaves a long document in one key; they had stepped block to block as Tab does. With nothing outside, focus stays where it was.
 - `ely-core`: a `Banner`'s action carries the debug selector `banner-action {label}`, so a test can press it.
