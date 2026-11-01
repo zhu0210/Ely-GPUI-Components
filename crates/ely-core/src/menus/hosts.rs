@@ -337,7 +337,11 @@ impl RenderOnce for ContextMenu {
                 }
             })
             .when(self.request.is_none(), |host| {
-                host.child(long_press(state.clone(), self.menu.clone()))
+                let (state, menu) = (state.clone(), self.menu.clone());
+                host.child(long_press(move |at, _, cx| {
+                    log::info!("context menu: long press at {at:?}");
+                    Open::show(&state, &menu, Spot::At(at), false, cx);
+                }))
             })
             .children(self.children)
             .child(measure_host(state.clone(), false))
@@ -345,9 +349,11 @@ impl RenderOnce for ContextMenu {
     }
 }
 
-/// A finger has no right button, so a long press opens the menu at it. Laid under the
-/// children, it hears the press after them, so a text field inside claims it first.
-fn long_press(state: Entity<Open>, menu: Menu) -> impl IntoElement {
+/// A finger has no right button, so a long press does what one would: `open` at the press.
+/// Laid under the children, it hears the press after them, so a text field inside claims it first.
+pub(super) fn long_press(
+    open: impl Fn(Point<Pixels>, &mut Window, &mut App) + 'static,
+) -> impl IntoElement {
     canvas(
         |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
         move |_, hitbox, window, _| {
@@ -358,8 +364,7 @@ fn long_press(state: Entity<Open>, menu: Menu) -> impl IntoElement {
                     && hitbox.is_hovered(window)
                 {
                     window.prevent_default();
-                    log::info!("context menu: long press at {:?}", event.start_position);
-                    Open::show(&state, &menu, Spot::At(event.start_position), false, cx);
+                    open(event.start_position, window, cx);
                 }
             });
         },
