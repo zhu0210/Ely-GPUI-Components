@@ -10,8 +10,8 @@ use ely_gpui_component::{
 use std::collections::HashMap;
 
 use gpui::{
-    Context, FocusHandle, FontWeight, KeyDownEvent, Render, ScrollHandle, Window, div, point,
-    prelude::*, px,
+    Context, FocusHandle, FontWeight, KeyDownEvent, Pixels, Render, ScrollHandle, Window, div,
+    point, prelude::*, px,
 };
 use gpui_mobile::{StatusBarContentStyle, SystemChromeStyle};
 
@@ -27,6 +27,13 @@ pub struct Phone {
     list: ScrollHandle,
     /// Each chapter's scroll, kept while another is open.
     scrolls: HashMap<usize, ScrollHandle>,
+    /// The caret's top in the chapter's content and the keyboard height it was
+    /// last brought into view for, so a finger can still scroll away from it.
+    shown_caret: Option<(Pixels, f32)>,
+    /// The chapter's scroll offset at the last render; a change means a finger scrolled.
+    seen_offset: Pixels,
+    /// Set after a scroll: the next steady render takes the caret's place as it is.
+    settling: bool,
 }
 
 impl Phone {
@@ -40,6 +47,9 @@ impl Phone {
             focus: cx.focus_handle(),
             list: ScrollHandle::new(),
             scrolls: HashMap::new(),
+            shown_caret: None,
+            seen_offset: px(0.0),
+            settling: false,
         }
     }
 
@@ -170,14 +180,28 @@ impl Phone {
 
 impl Phone {
     /// Scrolls the open chapter so the caret sits between the header and the
-    /// keyboard; nothing else moves it out from under the keyboard.
-    fn keep_caret_visible(&self, ix: usize, top: f32, window: &mut Window) {
+    /// keyboard when the keyboard opens or the caret moves; nothing else moves it
+    /// out from under the keyboard.
+    fn keep_caret_visible(&mut self, ix: usize, top: f32, window: &mut Window) {
         let keyboard = gpui_mobile::keyboard_height();
         let (Some(caret), Some(scroll)) = (gpui_mobile::caret_bounds(), self.scrolls.get(&ix))
         else {
+            self.shown_caret = None;
             return;
         };
         if keyboard <= 0.0 {
+            self.shown_caret = None;
+            return;
+        }
+        // `caret_bounds` comes from the last frame, so it trails a scroll in progress.
+        let offset = scroll.offset().y;
+        if std::mem::replace(&mut self.seen_offset, offset) != offset {
+            self.settling = true;
+            return;
+        }
+        let seen = (caret.top() - offset, keyboard);
+        let shown = self.shown_caret.replace(seen);
+        if std::mem::take(&mut self.settling) || shown == Some(seen) {
             return;
         }
         let margin = px(16.0);
@@ -194,6 +218,7 @@ impl Phone {
         let offset = scroll.offset();
         let y = (offset.y - shift).clamp(-scroll.max_offset().y, px(0.0));
         scroll.set_offset(point(offset.x, y));
+        self.seen_offset = y;
         window.refresh();
     }
 }
