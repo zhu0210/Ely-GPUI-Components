@@ -15,6 +15,7 @@ mod pressable;
 mod retired;
 mod severity;
 mod tooltip;
+mod touch;
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
@@ -42,3 +43,4 @@ pub use pressable::Pressable;
 pub use retired::Retired;
 pub use severity::Severity;
 pub use tooltip::{HelpTooltip, Tooltip, TooltipTrigger};
+pub(crate) use touch::touch_grip;

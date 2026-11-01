@@ -190,6 +190,7 @@ impl RenderOnce for Knob {
             )
             .when(!self.disabled, |knob| {
                 knob.cursor_ns_resize()
+                    .child(crate::primitives::touch_grip(Some(gpui::Axis::Vertical)))
                     .on_drag(
                         Turn {
                             owner,

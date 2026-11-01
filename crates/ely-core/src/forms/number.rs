@@ -152,6 +152,8 @@ fn scrub_handle(
     let notch = cx.theme().handle_hit().to_pixels(window.rem_size());
     div()
         .id(id)
+        .relative()
+        .child(crate::primitives::touch_grip(Some(gpui::Axis::Horizontal)))
         .cursor(CursorStyle::ResizeLeftRight)
         .on_drag(
             Scrub {
