@@ -71,3 +71,92 @@ jobs:
           name: gallery-android-smoke
           path: smoke/
           retention-days: 14
+
+  ios-simulator:
+    name: iOS simulator
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mobile/gallery
+
+      - name: Build the Rust library
+        working-directory: mobile/gallery
+        run: cargo build --lib --target aarch64-apple-ios-sim
+
+      - name: Build for the simulator
+        working-directory: mobile/gallery/ios
+        run: |
+          brew install xcodegen && xcodegen generate --spec project.yml
+          xcodebuild -project ElyGallery.xcodeproj -scheme ElyGallery \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build ENABLE_USER_SCRIPT_SANDBOXING=NO \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Open pages on the simulator
+        run: bash .github/scripts/gallery-smoke-ios.sh
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gallery-ios-smoke
+          path: smoke/
+          retention-days: 14
+
+  ios-ipa:
+    name: iOS unsigned IPA
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mobile/gallery
+
+      - name: Build the Rust library
+        working-directory: mobile/gallery
+        run: cargo build --lib --target aarch64-apple-ios --release
+
+      - name: Build for devices, unsigned
+        working-directory: mobile/gallery/ios
+        run: |
+          brew install xcodegen && xcodegen generate --spec project.yml
+          xcodebuild -project ElyGallery.xcodeproj -scheme ElyGallery \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build ENABLE_USER_SCRIPT_SANDBOXING=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      # SideStore signs it on the device.
+      - name: Package the IPA
+        run: |
+          mkdir -p ipa/Payload
+          cp -R mobile/gallery/ios/build/Build/Products/Release-iphoneos/ElyGallery.app ipa/Payload/
+          (cd ipa && zip -qr ElyGallery-unsigned.ipa Payload)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ElyGallery-unsigned.ipa
+          path: ipa/ElyGallery-unsigned.ipa
+          retention-days: 14

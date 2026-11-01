@@ -5,3 +5,5 @@ android/.gradle/
 android/.kotlin/
 android/local.properties
 target/
+ios/build/
+ios/*.xcodeproj/
