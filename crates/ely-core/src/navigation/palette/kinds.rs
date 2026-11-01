@@ -74,6 +74,7 @@ impl Command {
             end: self
                 .keys
                 .as_ref()
+                .filter(|_| crate::typography::keys::HINTS)
                 .map(|keys| KbdCombo::new(keys).into_any_element()),
         }
     }
