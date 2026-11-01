@@ -263,7 +263,7 @@ impl Render for Grip {
 }
 
 #[gpui::test]
-fn a_finger_drags_a_slider_from_its_first_move(cx: &mut TestAppContext) {
+fn a_finger_drags_a_slider_thumb_from_its_first_move(cx: &mut TestAppContext) {
     setup(cx);
     let claimed = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let (_, cx) = cx.add_window_view({
@@ -271,23 +271,23 @@ fn a_finger_drags_a_slider_from_its_first_move(cx: &mut TestAppContext) {
         move |_, _| Grip { claimed }
     });
     cx.update(|window, cx| window.draw(cx).clear(cx));
-    for start in [point(px(100.), px(20.)), point(px(100.), px(120.))] {
+    // The thumb sits mid-track at 50; the track beside it and the space below leave the page
+    // its scroll.
+    for start in [
+        point(px(100.), px(20.)),
+        point(px(20.), px(20.)),
+        point(px(100.), px(120.)),
+    ] {
         cx.simulate_event(TouchDragEvent {
             phase: TouchPhase::Started,
             start_position: start,
-            position: start + point(px(10.), px(0.)),
+            position: start,
         });
     }
-    let across = point(px(100.), px(20.));
-    cx.simulate_event(TouchDragEvent {
-        phase: TouchPhase::Started,
-        start_position: across,
-        position: across + point(px(0.), px(10.)),
-    });
     assert_eq!(
         *claimed.borrow(),
         [true, false, false],
-        "along the slider, below it, then across it"
+        "on the thumb, on the track, below the slider"
     );
 }
 
