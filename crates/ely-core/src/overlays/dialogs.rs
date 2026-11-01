@@ -49,6 +49,9 @@ fn said(
         })
         .child(
             div()
+                .debug_selector(|| "dialog-message".into())
+                .flex_1()
+                .min_w_0()
                 .pt_1p5()
                 .text_size(theme.text_size(TextSize::Sm))
                 .text_color(colors.fg_muted)
