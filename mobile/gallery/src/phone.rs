@@ -7,19 +7,26 @@ use ely_gpui_component::{
     primitives::IconName,
     theme::{ActiveTheme, ControlSize, Mode, TextSize, Theme},
 };
+use std::collections::HashMap;
+
 use gpui::{
-    Context, FocusHandle, FontWeight, KeyDownEvent, Render, ScrollHandle, Window, div, prelude::*,
-    px,
+    Context, FocusHandle, FontWeight, KeyDownEvent, Render, ScrollHandle, Window, div, point,
+    prelude::*, px,
 };
 use gpui_mobile::{StatusBarContentStyle, SystemChromeStyle};
 
 use crate::pages;
+
+/// The header's height, in logical pixels.
+const HEADER: f32 = 52.0;
 
 pub struct Phone {
     /// The open chapter; the list when none.
     page: Option<usize>,
     focus: FocusHandle,
     list: ScrollHandle,
+    /// Each chapter's scroll, kept while another is open.
+    scrolls: HashMap<usize, ScrollHandle>,
 }
 
 impl Phone {
@@ -28,6 +35,7 @@ impl Phone {
             page: start_page(),
             focus: cx.focus_handle(),
             list: ScrollHandle::new(),
+            scrolls: HashMap::new(),
         }
     }
 
@@ -53,7 +61,7 @@ impl Phone {
             .flex_none()
             .items_center()
             .gap_2()
-            .h(px(52.0))
+            .h(px(HEADER))
             .px_2()
             .border_b_1()
             .border_color(theme.colors.border)
@@ -134,15 +142,16 @@ impl Phone {
             }))
     }
 
-    fn page(&self, ix: usize, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn page(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let page = &pages::ALL[ix];
         let summary = cx.theme().colors.fg_muted;
-        // One id per chapter, so each keeps its own scroll position.
+        let scroll = self.scrolls.entry(ix).or_default().clone();
         div()
             .id(("page", ix))
             .flex_1()
             .min_h_0()
             .overflow_y_scroll()
+            .track_scroll(&scroll)
             .child(
                 div()
                     .p_4()
@@ -150,6 +159,35 @@ impl Phone {
                     .child(div().pb_4().text_color(summary).child(page.summary))
                     .child((page.render)(window, cx)),
             )
+    }
+}
+
+impl Phone {
+    /// Scrolls the open chapter so the caret sits between the header and the
+    /// keyboard; nothing else moves it out from under the keyboard.
+    fn keep_caret_visible(&self, ix: usize, top: f32, bottom: f32, window: &mut Window) {
+        let keyboard = gpui_mobile::keyboard_height();
+        let (Some(caret), Some(scroll)) = (gpui_mobile::caret_bounds(), self.scrolls.get(&ix))
+        else {
+            return;
+        };
+        if keyboard <= 0.0 {
+            return;
+        }
+        let margin = px(16.0);
+        let above = px(top + HEADER) + margin;
+        let below = window.viewport_size().height - px(bottom.max(keyboard)) - margin;
+        let shift = if caret.bottom() > below {
+            caret.bottom() - below
+        } else if caret.top() < above {
+            caret.top() - above
+        } else {
+            return;
+        };
+        let offset = scroll.offset();
+        let y = (offset.y - shift).clamp(-scroll.max_offset().y, px(0.0));
+        scroll.set_offset(point(offset.x, y));
+        window.refresh();
     }
 }
 
@@ -187,6 +225,9 @@ impl Render for Phone {
             },
             ..Default::default()
         });
+        if let Some(ix) = self.page {
+            self.keep_caret_visible(ix, top, bottom, window);
+        }
         let header = self.header(cx);
         let body = match self.page {
             Some(ix) => self.page(ix, window, cx).into_any_element(),
