@@ -3,8 +3,9 @@ use std::rc::Rc;
 use gpui::{
     App, AvailableSpace, Bounds, ContentMask, DispatchPhase, Element, ElementId,
     ElementInputHandler, Entity, FontStyle, GlobalElementId, Hsla, InspectorElementId, IntoElement,
-    LayoutId, MouseMoveEvent, Pixels, Point, SharedString, StrikethroughStyle, Style, TextAlign,
-    TextRun, UnderlineStyle, Window, WrappedLine, fill, point, relative, size,
+    LayoutId, LongPressEvent, MouseMoveEvent, Pixels, Point, SharedString, StrikethroughStyle,
+    Style, TextAlign, TextRun, TouchPhase, UnderlineStyle, Window, WrappedLine, fill, point,
+    relative, size,
 };
 
 use super::{Highlight, Layout, TextInput};
@@ -326,6 +327,38 @@ impl Element for TextElement {
             if let Some(caret) = prepaint.caret.take() {
                 window.paint_quad(fill(caret, prepaint.caret_color));
             }
+        });
+        // A long press on the text selects its word and drags the selection, as on a phone;
+        // claiming it keeps the press from panning the page.
+        let input = self.input.clone();
+        window.on_mouse_event(move |event: &LongPressEvent, phase, window, cx| {
+            if phase != DispatchPhase::Bubble {
+                return;
+            }
+            if event.phase == TouchPhase::Started {
+                if window.default_prevented()
+                    || !bounds.contains(&event.start_position)
+                    || input.read(cx).disabled
+                {
+                    return;
+                }
+                input.update(cx, |input, cx| {
+                    window.focus(input.focus(), cx);
+                    let at = input.offset_for_point(event.start_position);
+                    input.select_word(at, cx);
+                });
+                log::info!("text input: long press selects a word");
+                window.capture_long_press(&input);
+            } else if !window.has_long_press_capture(&input) {
+                return;
+            } else if event.phase == TouchPhase::Moved {
+                input.update(cx, |input, cx| {
+                    let at = input.offset_for_point(event.position);
+                    input.select_to(at, cx);
+                });
+            }
+            window.prevent_default();
+            cx.stop_propagation();
         });
         if selecting {
             let input = self.input.clone();
