@@ -356,6 +356,8 @@ impl Element for TextElement {
                     let at = input.offset_for_point(event.position);
                     input.select_to(at, cx);
                 });
+            } else if event.phase == TouchPhase::Ended {
+                input.update(cx, |input, cx| input.ask_edit_menu(event.position, cx));
             }
             window.prevent_default();
             cx.stop_propagation();
