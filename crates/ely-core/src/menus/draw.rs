@@ -282,6 +282,17 @@ pub(super) fn panel(
         .p_1()
         .flex()
         .flex_col()
+        // gpui strokes a border after the children, over a submenu that overlaps this panel
+        // on a narrow window; drawn first instead, the submenu lies over it.
+        .border_color(gpui::transparent_black())
+        .child(
+            div()
+                .absolute()
+                .inset_0()
+                .rounded(theme.radius(Radius::Lg))
+                .border_1()
+                .border_color(colors.border),
+        )
         .children(head)
         .children(rows)
         .child(measure(state.clone(), move |open, bounds| {
