@@ -79,15 +79,18 @@ fn row(item: &MenuItem, ix: usize, current: bool, cx: &App) -> Stateful<Div> {
                     marked(item.label.clone(), item.hits.clone(), cx)
                 }),
         )
-        .when_some(item.keys.clone(), |row, keys| {
-            row.child(
-                div()
-                    .flex_none()
-                    .pl_4()
-                    .text_color(colors.fg_subtle)
-                    .child(KbdCombo::new(&keys)),
-            )
-        })
+        .when_some(
+            item.keys.clone().filter(|_| crate::typography::keys::HINTS),
+            |row, keys| {
+                row.child(
+                    div()
+                        .flex_none()
+                        .pl_4()
+                        .text_color(colors.fg_subtle)
+                        .child(KbdCombo::new(&keys)),
+                )
+            },
+        )
         .when(matches!(item.kind, Kind::Sub(_)), |row| {
             row.child(
                 Icon::new(IconName::ChevronRight)
@@ -150,13 +153,16 @@ pub(super) fn button(
                 .items_center()
                 .gap_2()
                 .child(label.clone())
-                .when_some(keys.clone(), |tip, keys| {
-                    tip.child(
-                        div()
-                            .text_color(cx.theme().colors.tooltip_fg.opacity(0.6))
-                            .child(KbdCombo::new(&keys)),
-                    )
-                })
+                .when_some(
+                    keys.clone().filter(|_| crate::typography::keys::HINTS),
+                    |tip, keys| {
+                        tip.child(
+                            div()
+                                .text_color(cx.theme().colors.tooltip_fg.opacity(0.6))
+                                .child(KbdCombo::new(&keys)),
+                        )
+                    },
+                )
                 .into_any_element()
         }))
 }

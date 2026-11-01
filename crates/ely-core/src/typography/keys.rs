@@ -2,6 +2,10 @@ use gpui::{Keystroke, OperatingSystem};
 
 use crate::theme::Platform;
 
+/// Whether menus show shortcut hints: phones have no keyboard to press them on.
+#[doc(hidden)]
+pub const HINTS: bool = !cfg!(any(target_os = "android", target_os = "ios"));
+
 /// One keystroke in gpui key syntax, `secondary` read for `platform`: Command on the Mac, Control elsewhere.
 pub fn keystroke(source: &str, platform: Platform) -> Keystroke {
     let secondary = if platform == Platform::Mac {
