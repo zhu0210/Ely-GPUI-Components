@@ -83,3 +83,17 @@ fn android_main(app: android_activity::AndroidApp) {
             }
         });
 }
+
+/// Called by the iOS host's app delegate while launching, after it hands over
+/// the launch link; returns once the window is open, and frames come from the
+/// host's display link.
+#[cfg(target_os = "ios")]
+#[unsafe(no_mangle)]
+pub extern "C" fn ely_gallery_ios_start() {
+    gpui_mobile::ios::ffi::set_app_callback(Box::new(|cx: &mut App| {
+        if let Err(error) = launch(cx) {
+            log::error!("gallery: {error:#}");
+        }
+    }));
+    gpui_mobile::ios::ffi::run_app_with_assets(assets::GalleryAssets);
+}
