@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, ElementId, Entity, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString, Stateful, StyleRefinement,
-    Styled, Window, div, prelude::*,
+    AnyElement, App, ClickEvent, Div, ElementId, Entity, HitboxBehavior, InteractiveElement,
+    IntoElement, LongPressEvent, MouseButton, ParentElement, Pixels, Point, RenderOnce,
+    SharedString, Stateful, StyleRefinement, Styled, TouchPhase, Window, canvas, div, prelude::*,
 };
 use smallvec::SmallVec;
 
@@ -336,10 +336,36 @@ impl RenderOnce for ContextMenu {
                     Open::close(&shut, window, cx);
                 }
             })
+            .when(self.request.is_none(), |host| {
+                host.child(long_press(state.clone(), self.menu.clone()))
+            })
             .children(self.children)
             .child(measure_host(state.clone(), false))
             .children(hang(&self.id, &self.menu, &state, None, window, cx))
     }
+}
+
+/// A finger has no right button, so a long press opens the menu at it. Laid under the
+/// children, it hears the press after them, so a text field inside claims it first.
+fn long_press(state: Entity<Open>, menu: Menu) -> impl IntoElement {
+    canvas(
+        |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
+        move |_, hitbox, window, _| {
+            window.on_mouse_event(move |event: &LongPressEvent, phase, window, cx| {
+                if phase.bubble()
+                    && event.phase == TouchPhase::Started
+                    && !window.default_prevented()
+                    && hitbox.is_hovered(window)
+                {
+                    window.prevent_default();
+                    log::info!("context menu: long press at {:?}", event.start_position);
+                    Open::show(&state, &menu, Spot::At(event.start_position), false, cx);
+                }
+            });
+        },
+    )
+    .absolute()
+    .size_full()
 }
 
 /// A button that opens a menu headed by a filter field. Typing narrows the rows, best first, and marks the letters that matched.

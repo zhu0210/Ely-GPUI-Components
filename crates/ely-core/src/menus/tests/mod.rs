@@ -1,7 +1,7 @@
 use gpui::{
-    App, Context, FocusHandle, InteractiveElement, IntoElement, KeyUpEvent, Keystroke, Modifiers,
-    MouseButton, ParentElement, Render, SharedString, Styled, TestAppContext, VisualTestContext,
-    Window, div, point, prelude::*, px,
+    App, Context, FocusHandle, InputEvent as _, InteractiveElement, IntoElement, KeyUpEvent,
+    Keystroke, LongPressEvent, Modifiers, MouseButton, ParentElement, Render, SharedString, Styled,
+    TestAppContext, TouchPhase, VisualTestContext, Window, div, point, prelude::*, px,
 };
 
 mod aim;
@@ -219,6 +219,27 @@ fn a_right_click_opens_the_context_menu_where_it_lands(cx: &mut TestAppContext) 
     cx.simulate_mouse_move(at, None, Modifiers::none());
     cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
     cx.simulate_mouse_up(at, MouseButton::Right, Modifiers::none());
+    settle(cx);
+    press("down", cx);
+    press("enter", cx);
+    assert_eq!(ran(&view, cx), ["cut"]);
+}
+
+#[gpui::test]
+fn a_long_press_opens_the_context_menu_where_it_lands(cx: &mut TestAppContext) {
+    let (view, cx) = desk(cx);
+    let at = point(px(60.0), px(80.0));
+    cx.simulate_mouse_move(at, None, Modifiers::none());
+    for phase in [TouchPhase::Started, TouchPhase::Ended] {
+        cx.update(|window, cx| {
+            let press = LongPressEvent {
+                phase,
+                start_position: at,
+                position: at,
+            };
+            window.dispatch_event(press.to_platform_input(), cx);
+        });
+    }
     settle(cx);
     press("down", cx);
     press("enter", cx);
