@@ -6,7 +6,11 @@
 /// A file under the gallery's assets, by name.
 macro_rules! asset {
     ($name:literal) => {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/ely-gallery/assets/", $name)
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../crates/ely-gallery/assets/",
+            $name
+        )
     };
 }
 
