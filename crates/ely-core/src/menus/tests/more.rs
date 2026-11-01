@@ -1,7 +1,7 @@
 use gpui::{
-    Context, FocusHandle, InteractiveElement, IntoElement, KeyBinding, Modifiers, MouseButton,
-    OwnedMenu, OwnedMenuItem, ParentElement, Render, Styled, TestAppContext, VisualTestContext,
-    Window, actions, div, point, px,
+    Context, FocusHandle, InputEvent as _, InteractiveElement, IntoElement, KeyBinding,
+    LongPressEvent, Modifiers, MouseButton, OwnedMenu, OwnedMenuItem, ParentElement, Render,
+    Styled, TestAppContext, TouchPhase, VisualTestContext, Window, actions, div, point, px,
 };
 
 use super::{press, settle};
@@ -146,6 +146,11 @@ impl Render for Wheel {
 }
 
 fn wheel(cx: &mut TestAppContext) -> (gpui::Entity<Wheel>, &mut VisualTestContext) {
+    wheel_by(cx, false)
+}
+
+/// The pie opened by a right click, or by a long press as a finger opens it.
+fn wheel_by(cx: &mut TestAppContext, long: bool) -> (gpui::Entity<Wheel>, &mut VisualTestContext) {
     cx.update(Theme::init);
     let (view, cx) = cx.add_window_view(|_, cx| Wheel {
         ran: Vec::new(),
@@ -158,8 +163,21 @@ fn wheel(cx: &mut TestAppContext) -> (gpui::Entity<Wheel>, &mut VisualTestContex
     cx.update(|window, cx| window.focus(&view.read(cx).before.clone(), cx));
     let at = point(px(300.0), px(300.0));
     cx.simulate_mouse_move(at, None, Modifiers::none());
-    cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
-    cx.simulate_mouse_up(at, MouseButton::Right, Modifiers::none());
+    if long {
+        for phase in [TouchPhase::Started, TouchPhase::Ended] {
+            cx.update(|window, cx| {
+                let press = LongPressEvent {
+                    phase,
+                    start_position: at,
+                    position: at,
+                };
+                window.dispatch_event(press.to_platform_input(), cx);
+            });
+        }
+    } else {
+        cx.simulate_mouse_down(at, MouseButton::Right, Modifiers::none());
+        cx.simulate_mouse_up(at, MouseButton::Right, Modifiers::none());
+    }
     settle(cx);
     (view, cx)
 }
@@ -167,6 +185,16 @@ fn wheel(cx: &mut TestAppContext) -> (gpui::Entity<Wheel>, &mut VisualTestContex
 #[gpui::test]
 fn the_pointer_direction_picks_a_slice(cx: &mut TestAppContext) {
     let (view, cx) = wheel(cx);
+    let right = point(px(400.0), px(300.0));
+    cx.simulate_mouse_move(right, None, Modifiers::none());
+    cx.simulate_click(right, Modifiers::none());
+    settle(cx);
+    assert_eq!(view.read_with(cx, |wheel, _| wheel.ran.clone()), ["cut"]);
+}
+
+#[gpui::test]
+fn a_long_press_opens_the_pie_and_a_tap_picks(cx: &mut TestAppContext) {
+    let (view, cx) = wheel_by(cx, true);
     let right = point(px(400.0), px(300.0));
     cx.simulate_mouse_move(right, None, Modifiers::none());
     cx.simulate_click(right, Modifiers::none());

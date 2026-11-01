@@ -121,14 +121,19 @@ fn show(state: &Entity<Pie>, at: Option<Point<Pixels>>, cx: &mut App) {
 impl RenderOnce for PieMenu {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = window.use_keyed_state((self.id.clone(), "pie"), cx, |_, _| Pie::default());
-        let opener = state.clone();
+        let (opener, presser) = (state.clone(), state.clone());
         let region = div()
             .id(self.id.clone())
+            .relative()
             .on_mouse_down(MouseButton::Right, move |event, window, cx| {
                 window.prevent_default();
                 log::info!("pie menu: at {:?}", event.position);
                 show(&opener, Some(event.position), cx);
             })
+            .child(super::hosts::long_press(move |at, _, cx| {
+                log::info!("pie menu: long press at {at:?}");
+                show(&presser, Some(at), cx);
+            }))
             .children(self.children);
         let Some(at) = state.read(cx).at else {
             return region;
