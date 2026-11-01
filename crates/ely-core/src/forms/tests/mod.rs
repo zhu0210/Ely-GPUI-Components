@@ -484,8 +484,10 @@ fn a_long_press_selects_the_word_and_drags_the_selection(cx: &mut TestAppContext
             input.bounds_for_range(9..10)[0].center(),
         )
     });
+    // A held finger reports moves in place before the drag.
     for (phase, position) in [
         (TouchPhase::Started, start),
+        (TouchPhase::Moved, start),
         (TouchPhase::Moved, end),
         (TouchPhase::Ended, end),
     ] {
@@ -498,7 +500,7 @@ fn a_long_press_selects_the_word_and_drags_the_selection(cx: &mut TestAppContext
             window.dispatch_event(press.to_platform_input(), cx);
         });
         cx.run_until_parked();
-        if phase == TouchPhase::Started {
+        if position == start {
             assert_eq!(fields[0].read_with(cx, |input, _| input.selection()), 0..5);
             let focused = fields[0].read_with(cx, |input, _| input.focus().clone());
             assert!(cx.update(|window, _| focused.is_focused(window)));

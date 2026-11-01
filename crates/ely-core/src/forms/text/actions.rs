@@ -382,6 +382,26 @@ impl TextInput {
         cx.notify();
     }
 
+    /// A long press picks the word at `at`; a drag then extends from it.
+    pub(super) fn press_word(&mut self, at: usize, cx: &mut Context<Self>) {
+        self.select_word(at, cx);
+        self.pressed_word = Some(self.selection.clone());
+    }
+
+    /// Selects from the pressed word to `at`, whole words at both ends of the word.
+    pub(super) fn drag_from_word(&mut self, at: usize, cx: &mut Context<Self>) {
+        let Some(word) = self.pressed_word.clone() else {
+            return;
+        };
+        (self.selection, self.reversed) = if at < word.start {
+            (at..word.end, true)
+        } else {
+            (word.start..at.max(word.end), false)
+        };
+        self.restart_blink(cx);
+        cx.notify();
+    }
+
     /// A right press keeps a selection it lands in.
     fn secondary_down(
         &mut self,
