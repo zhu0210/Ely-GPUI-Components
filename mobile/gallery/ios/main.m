@@ -17,6 +17,12 @@ static void ElyGalleryResumeFrames(void *context);
     // A cold launch from gpui://gallery/<slug> hands its link here, before openURL: the
     // gallery reads it while opening its window.
     NSURL *link = launchOptions[UIApplicationLaunchOptionsURLKey];
+    // `simctl launch <sim> com.elygpui.gallery <link>` passes it as an argument instead, as the
+    // CI shots do: `simctl openurl` stops at a prompt asking whether to open the app.
+    NSArray<NSString *> *arguments = NSProcessInfo.processInfo.arguments;
+    if (!link && arguments.count > 1 && [arguments[1] hasPrefix:@"gpui://"]) {
+        link = [NSURL URLWithString:arguments[1]];
+    }
     if (link) {
         gpui_ios_handle_open_url((__bridge void *)link.absoluteString);
     }
