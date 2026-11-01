@@ -244,10 +244,13 @@ impl RenderOnce for Dialog {
             });
             div()
                 .id(self.id.clone())
+                .debug_selector(|| "dialog-card".into())
                 .flex()
                 .flex_col()
                 .gap_5()
                 .w(theme.dialog_width())
+                // A phone is narrower than the card; keep the window's margin each side.
+                .max_w(window.viewport_size().width - theme.window_margin() * 2.0)
                 .max_h(window.viewport_size().height - margin * 2.0)
                 .p_6()
                 .rounded(theme.radius(Radius::Xl))
