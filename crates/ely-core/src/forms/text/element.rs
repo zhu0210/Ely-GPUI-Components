@@ -345,17 +345,22 @@ impl Element for TextElement {
                 input.update(cx, |input, cx| {
                     window.focus(input.focus(), cx);
                     let at = input.offset_for_point(event.start_position);
-                    input.select_word(at, cx);
+                    input.press_word(at, cx);
                 });
                 log::info!("text input: long press selects a word");
                 window.capture_long_press(&input);
             } else if !window.has_long_press_capture(&input) {
                 return;
             } else if event.phase == TouchPhase::Moved {
-                input.update(cx, |input, cx| {
-                    let at = input.offset_for_point(event.position);
-                    input.select_to(at, cx);
-                });
+                // A held finger reports moves in place, and focusing may relay the text under
+                // it, so only a real drag reads a new place.
+                let travel = event.position - event.start_position;
+                if travel.x.abs().max(travel.y.abs()) >= window.rem_size() * 0.5 {
+                    input.update(cx, |input, cx| {
+                        let at = input.offset_for_point(event.position);
+                        input.drag_from_word(at, cx);
+                    });
+                }
             } else if event.phase == TouchPhase::Ended {
                 input.update(cx, |input, cx| input.ask_edit_menu(event.position, cx));
             }
