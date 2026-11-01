@@ -110,8 +110,9 @@ impl Render for Stage {
             Open::Plain => Dialog::new("plain", "Plain", shut)
                 .detail("A line of detail")
                 .into_any_element(),
-            Open::Alert => AlertDialog::new("alert", Severity::Warning, "Alert", LONG, shut)
-                .into_any_element(),
+            Open::Alert => {
+                AlertDialog::new("alert", Severity::Warning, "Alert", LONG, shut).into_any_element()
+            }
             Open::Confirm => ConfirmDialog::new("confirm", "Delete", "Gone for good", shut)
                 .confirm("Delete")
                 .destructive()
@@ -354,8 +355,13 @@ fn an_alert_wraps_its_message_inside_a_phone_wide_card(cx: &mut TestAppContext) 
     std::thread::sleep(Duration::from_millis(2));
     settle(cx);
     let card = cx.debug_bounds("dialog-card").expect("the dialog's card");
-    let said = cx.debug_bounds("dialog-message").expect("the alert's message");
-    assert!(said.right() <= card.right(), "{said:?} runs out of {card:?}");
+    let said = cx
+        .debug_bounds("dialog-message")
+        .expect("the alert's message");
+    assert!(
+        said.right() <= card.right(),
+        "{said:?} runs out of {card:?}"
+    );
 }
 
 #[gpui::test]

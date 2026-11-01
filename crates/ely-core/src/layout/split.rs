@@ -25,6 +25,8 @@ fn handle(id: impl Into<ElementId>, axis: Axis, line: Hsla, cx: &App) -> Statefu
     let base = div()
         .id(id)
         .group("resize")
+        .relative()
+        .child(crate::primitives::touch_grip(Some(axis)))
         .flex_none()
         .flex()
         .justify_center()

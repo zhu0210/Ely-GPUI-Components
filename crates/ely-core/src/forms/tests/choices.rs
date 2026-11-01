@@ -1,6 +1,7 @@
 use gpui::{
     AppContext as _, Context, Entity, IntoElement, KeyUpEvent, Keystroke, Modifiers, ParentElement,
-    Render, SharedString, Styled, TestAppContext, VisualTestContext, Window, div, point, px,
+    Render, SharedString, Styled, TestAppContext, TouchDragEvent, TouchPhase, VisualTestContext,
+    Window, div, point, px,
 };
 
 use super::setup;
@@ -224,6 +225,72 @@ fn slider_keys_step_jump_and_reach_the_end(cx: &mut TestAppContext) {
     assert_eq!(view.read_with(cx, |view, _| view.value), 21.0);
     cx.simulate_keystrokes("end");
     assert_eq!(view.read_with(cx, |view, _| view.value), 100.0);
+}
+
+/// A slider at the top left, and what the window saw of each touch drag that began.
+struct Grip {
+    claimed: std::rc::Rc<std::cell::RefCell<Vec<bool>>>,
+}
+
+impl Render for Grip {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let claimed = self.claimed.clone();
+        div()
+            .size_full()
+            .child(
+                gpui::canvas(
+                    |_, _, _| {},
+                    move |_, _, window, _| {
+                        let claimed = claimed.clone();
+                        window.on_mouse_event(move |event: &TouchDragEvent, phase, window, _| {
+                            if phase.bubble() && event.phase == TouchPhase::Started {
+                                claimed.borrow_mut().push(window.default_prevented());
+                            }
+                        });
+                    },
+                )
+                .absolute()
+                .size_0(),
+            )
+            .child(
+                div()
+                    .w(px(200.))
+                    .h(px(40.))
+                    .flex()
+                    .flex_col()
+                    .justify_center()
+                    .child(Slider::new("level", 50.0)),
+            )
+    }
+}
+
+#[gpui::test]
+fn a_finger_drags_a_slider_from_its_first_move(cx: &mut TestAppContext) {
+    setup(cx);
+    let claimed = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let (_, cx) = cx.add_window_view({
+        let claimed = claimed.clone();
+        move |_, _| Grip { claimed }
+    });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    for start in [point(px(100.), px(20.)), point(px(100.), px(120.))] {
+        cx.simulate_event(TouchDragEvent {
+            phase: TouchPhase::Started,
+            start_position: start,
+            position: start + point(px(10.), px(0.)),
+        });
+    }
+    let across = point(px(100.), px(20.));
+    cx.simulate_event(TouchDragEvent {
+        phase: TouchPhase::Started,
+        start_position: across,
+        position: across + point(px(0.), px(10.)),
+    });
+    assert_eq!(
+        *claimed.borrow(),
+        [true, false, false],
+        "along the slider, below it, then across it"
+    );
 }
 
 struct Agree {

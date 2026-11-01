@@ -21,7 +21,7 @@ anyhow = "1"
 ely-gpui-component = { path = "../..", default-features = false, features = ["fonts"] }
 futures = "0.3"
 gpui = { package = "gpui-pre", version = "=0.3.10", default-features = false }
-gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "e92c011853687701169efdd0269d54fac0669345" }
+gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "364f301f6999fc064d370bf4218b245959971371" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 jiff = "0.2"
 log = "0.4"
