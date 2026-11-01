@@ -276,6 +276,8 @@ impl Render for Phone {
         div()
             .track_focus(&self.focus)
             .size_full()
+            // A long press that moves drags, as a held mouse button does.
+            .child(gpui_mobile::touch_drags())
             .flex()
             .flex_col()
             .pt(px(top))
