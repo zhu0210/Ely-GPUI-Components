@@ -1,0 +1,42 @@
+[package]
+name = "ely-gallery-mobile"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.98"
+license = "MIT"
+description = "The gallery's pages as an Android and iOS app on gpui-mobile."
+publish = false
+
+# Its own workspace: the root's `crates/*` stays desktop and web, and this
+# crate's mobile platform never reaches their checks or Cargo.lock.
+[workspace]
+
+[lib]
+name = "ely_gallery_mobile"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+anyhow = "1"
+# `runtime_shaders` turns on gpui_platform, the desktop platform; gpui-mobile replaces it.
+ely-gpui-component = { path = "../..", default-features = false, features = ["fonts"] }
+futures = "0.3"
+gpui = { package = "gpui-pre", version = "=0.3.10", default-features = false }
+gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "f62abb51ce015376920aa58385e466c79c7ae2f6" }
+image = { version = "0.25", default-features = false, features = ["png"] }
+jiff = "0.2"
+log = "0.4"
+qrcode = { version = "0.14", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+web-time = "1.1"
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.15"
+android-activity = { version = "0.6", features = ["native-activity"] }
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
