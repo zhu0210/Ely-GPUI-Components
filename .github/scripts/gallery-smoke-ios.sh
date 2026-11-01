@@ -22,7 +22,8 @@ for page in "${pages[@]}"; do
     [ "$theme" = dark ] && link="$link?dark"
     name="${page:-home}-$theme"
     xcrun simctl terminate "$sim" "$APP" 2>/dev/null || true
-    xcrun simctl openurl "$sim" "$link"
+    # The link as an argument: `openurl` stops at a prompt asking to open the app.
+    xcrun simctl launch "$sim" "$APP" "$link" >/dev/null
     sleep 10
     xcrun simctl io "$sim" screenshot "$OUT/$name.png"
     # Capture first: `grep -q` exits early, and with pipefail the SIGPIPE it leaves
