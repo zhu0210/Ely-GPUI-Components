@@ -4,6 +4,7 @@ What changes for an app built on Ely, newest first. An entry names the crates it
 
 ## Unreleased
 
+- `ely-core`: menus, toolbar tooltips and the command palette leave out shortcut hints on Android and iOS, where there is no keyboard to press them on; they had spelled desktop chords such as Super+S.
 - `ely-core`: a `Dialog` no wider than its window less the theme's `window_margin` each side, so on a phone its title and buttons stay on screen; it had kept its full width and run off both edges. Its card carries the debug selector `dialog-card`.
 - `ely-core`: a long press opens a `PieMenu` too, and a tap on a slice runs it. A menu panel draws its border under its rows, so a submenu that overlaps it on a narrow window is no longer crossed by the parent's edge.
 - `ely-core`: when a long press on a `TextInput` ends, an edit menu opens at the finger with Cut, Copy, Paste and Select all, Cut and Copy only over a selection. New message keys `edit.cut`, `edit.paste` and `edit.select_all` (Copy reads `copy.button`), in every built-in locale; an app's own catalog adds them.
