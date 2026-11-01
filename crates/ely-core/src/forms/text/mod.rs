@@ -98,6 +98,8 @@ pub struct TextInput {
     pub(crate) layout: Option<Layout>,
     pub(crate) scroll: Point<Pixels>,
     selecting: bool,
+    /// The word a long press picked, which a drag extends from.
+    pressed_word: Option<Range<usize>>,
     /// The edit menu a long press asked for, numbered, at the finger.
     edit_menu: Option<(u64, Point<Pixels>)>,
     caret_on: bool,
@@ -159,6 +161,7 @@ impl TextInput {
             layout: None,
             scroll: Point::default(),
             selecting: false,
+            pressed_word: None,
             edit_menu: None,
             caret_on: true,
             focused: false,
