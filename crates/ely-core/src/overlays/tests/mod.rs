@@ -110,7 +110,7 @@ impl Render for Stage {
             Open::Plain => Dialog::new("plain", "Plain", shut)
                 .detail("A line of detail")
                 .into_any_element(),
-            Open::Alert => AlertDialog::new("alert", Severity::Warning, "Alert", "Look", shut)
+            Open::Alert => AlertDialog::new("alert", Severity::Warning, "Alert", LONG, shut)
                 .into_any_element(),
             Open::Confirm => ConfirmDialog::new("confirm", "Delete", "Gone for good", shut)
                 .confirm("Delete")
@@ -339,6 +339,23 @@ fn a_dialog_fits_a_phone_wide_window(cx: &mut TestAppContext) {
     let margin = cx.update(|_, cx| cx.theme().window_margin());
     assert!(card.left() >= margin, "{card:?}");
     assert!(card.right() <= px(360.0) - margin, "{card:?}");
+}
+
+/// An alert message too long for one line on a phone.
+const LONG: &str = "Sign in again to keep your changes. Nothing is lost while you do.";
+
+#[gpui::test]
+fn an_alert_wraps_its_message_inside_a_phone_wide_card(cx: &mut TestAppContext) {
+    let (view, cx) = stage(cx);
+    cx.update(|_, cx| Theme::update(cx, |theme| theme.reduced_motion = true));
+    cx.simulate_resize(gpui::size(px(360.0), px(720.0)));
+    settle(cx);
+    show(&view, Open::Alert, cx);
+    std::thread::sleep(Duration::from_millis(2));
+    settle(cx);
+    let card = cx.debug_bounds("dialog-card").expect("the dialog's card");
+    let said = cx.debug_bounds("dialog-message").expect("the alert's message");
+    assert!(said.right() <= card.right(), "{said:?} runs out of {card:?}");
 }
 
 #[gpui::test]
