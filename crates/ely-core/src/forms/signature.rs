@@ -98,35 +98,36 @@ pub fn pen(
     let (press, start, moving) = (drawing.clone(), drawing.clone(), drawing.clone());
     let up = Rc::new(finish);
     let leave = up.clone();
-    pad.on_mouse_down(MouseButton::Left, move |event, _, cx| {
-        press.update(cx, |drawing, cx| {
-            drawing.stroke = vec![local(drawing.bounds, event.position)];
-            cx.notify();
+    pad.child(crate::primitives::touch_grip(None))
+        .on_mouse_down(MouseButton::Left, move |event, _, cx| {
+            press.update(cx, |drawing, cx| {
+                drawing.stroke = vec![local(drawing.bounds, event.position)];
+                cx.notify();
+            })
         })
-    })
-    .on_drag(Pen { owner }, move |_, _, window, cx| {
-        let at = window.mouse_position();
-        start.update(cx, |drawing, cx| {
-            drawing.reach(at);
-            cx.notify();
-        });
-        cx.new(|_| EmptyView)
-    })
-    .on_drag_move(move |event: &DragMoveEvent<Pen>, _, cx| {
-        if event.drag(cx).owner != owner {
-            return;
-        }
-        moving.update(cx, |drawing, cx| {
-            drawing.reach(event.event.position);
-            cx.notify();
+        .on_drag(Pen { owner }, move |_, _, window, cx| {
+            let at = window.mouse_position();
+            start.update(cx, |drawing, cx| {
+                drawing.reach(at);
+                cx.notify();
+            });
+            cx.new(|_| EmptyView)
         })
-    })
-    .on_mouse_up(MouseButton::Left, move |event, window, cx| {
-        up(event.position, window, cx)
-    })
-    .on_mouse_up_out(MouseButton::Left, move |event, window, cx| {
-        leave(event.position, window, cx)
-    })
+        .on_drag_move(move |event: &DragMoveEvent<Pen>, _, cx| {
+            if event.drag(cx).owner != owner {
+                return;
+            }
+            moving.update(cx, |drawing, cx| {
+                drawing.reach(event.event.position);
+                cx.notify();
+            })
+        })
+        .on_mouse_up(MouseButton::Left, move |event, window, cx| {
+            up(event.position, window, cx)
+        })
+        .on_mouse_up_out(MouseButton::Left, move |event, window, cx| {
+            leave(event.position, window, cx)
+        })
 }
 
 fn paint(

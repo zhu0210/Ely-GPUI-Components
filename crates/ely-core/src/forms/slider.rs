@@ -72,6 +72,11 @@ impl Track {
     fn render(self, window: &mut Window, cx: &mut App) -> AnyElement {
         let (min, max, step) = self.range;
         let vertical = self.vertical;
+        let axis = if vertical {
+            gpui::Axis::Vertical
+        } else {
+            gpui::Axis::Horizontal
+        };
         let owner = window
             .use_keyed_state((self.id.clone(), "drag"), cx, |_, _| ())
             .entity_id();
@@ -200,6 +205,7 @@ impl Track {
                     .when(!self.disabled, |thumb_box| {
                         thumb_box
                             .cursor_pointer()
+                            .child(crate::primitives::touch_grip(Some(axis)))
                             .on_drag(
                                 Thumb {
                                     owner,
@@ -245,6 +251,7 @@ impl Track {
             .when(!self.disabled, |inner| {
                 let grab = grabbed.clone();
                 inner
+                    .child(crate::primitives::touch_grip(Some(axis)))
                     .on_drag(Thumb { owner, index: None }, |_, _, _, cx| {
                         cx.new(|_| EmptyView)
                     })
