@@ -31,8 +31,12 @@ pub struct Phone {
 
 impl Phone {
     pub fn new(cx: &mut Context<Self>) -> Self {
+        let (page, dark) = start_page();
+        if dark {
+            Theme::set_mode(Mode::Dark, cx);
+        }
         Self {
-            page: start_page(),
+            page,
             focus: cx.focus_handle(),
             list: ScrollHandle::new(),
             scrolls: HashMap::new(),
@@ -55,7 +59,9 @@ impl Phone {
     fn header(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let theme = cx.theme();
         let dark = theme.is_dark();
-        let title = self.page.map_or("Ely Gallery", |page| pages::ALL[page].title);
+        let title = self
+            .page
+            .map_or("Ely Gallery", |page| pages::ALL[page].title);
         div()
             .flex()
             .flex_none()
@@ -165,7 +171,7 @@ impl Phone {
 impl Phone {
     /// Scrolls the open chapter so the caret sits between the header and the
     /// keyboard; nothing else moves it out from under the keyboard.
-    fn keep_caret_visible(&self, ix: usize, top: f32, bottom: f32, window: &mut Window) {
+    fn keep_caret_visible(&self, ix: usize, top: f32, window: &mut Window) {
         let keyboard = gpui_mobile::keyboard_height();
         let (Some(caret), Some(scroll)) = (gpui_mobile::caret_bounds(), self.scrolls.get(&ix))
         else {
@@ -176,7 +182,8 @@ impl Phone {
         }
         let margin = px(16.0);
         let above = px(top + HEADER) + margin;
-        let below = window.viewport_size().height - px(bottom.max(keyboard)) - margin;
+        // The viewport already ends at the keyboard, which covers the bottom inset.
+        let below = window.viewport_size().height - margin;
         let shift = if caret.bottom() > below {
             caret.bottom() - below
         } else if caret.top() < above {
@@ -191,21 +198,29 @@ impl Phone {
     }
 }
 
-/// The chapter a `gpui://gallery/<slug>` link opens on, as a capture does.
-fn start_page() -> Option<usize> {
+/// The chapter a `gpui://gallery/<slug>` link opens on, as a capture does, and
+/// whether it asks for dark mode with `?dark`.
+fn start_page() -> (Option<usize>, bool) {
     let link = match gpui_mobile::packages::deeplink::get_initial_link() {
-        Ok(link) => link?,
+        Ok(Some(link)) => link,
+        Ok(None) => return (None, false),
         Err(error) => {
             log::error!("gallery: the launch link could not be read: {error}");
-            return None;
+            return (None, false);
         }
     };
-    let slug = link.strip_prefix("gpui://gallery/")?;
+    let Some(rest) = link.strip_prefix("gpui://gallery/") else {
+        return (None, false);
+    };
+    let (slug, dark) = match rest.split_once('?') {
+        Some((slug, query)) => (slug, query.split('&').any(|part| part == "dark")),
+        None => (rest, false),
+    };
     let page = pages::find(slug);
-    if page.is_none() {
+    if page.is_none() && !slug.is_empty() {
         log::error!("gallery: no page {slug} for {link}");
     }
-    page
+    (page, dark)
 }
 
 impl Render for Phone {
@@ -226,7 +241,7 @@ impl Render for Phone {
             ..Default::default()
         });
         if let Some(ix) = self.page {
-            self.keep_caret_visible(ix, top, bottom, window);
+            self.keep_caret_visible(ix, top, window);
         }
         let header = self.header(cx);
         let body = match self.page {
@@ -239,7 +254,9 @@ impl Render for Phone {
             .flex()
             .flex_col()
             .pt(px(top))
-            .pb(px(bottom.max(gpui_mobile::keyboard_height())))
+            .when(gpui_mobile::keyboard_height() <= 0.0, |shell| {
+                shell.pb(px(bottom))
+            })
             .pl(px(left))
             .pr(px(right))
             .bg(bg)
