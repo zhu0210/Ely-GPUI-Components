@@ -357,12 +357,7 @@ impl TextInput {
         window.focus(&self.focus, cx);
         let at = self.offset_for_point(event.position);
         match event.click_count {
-            2 => {
-                let word = edit::word_at(&self.text, at);
-                self.selection = word;
-                self.reversed = false;
-                cx.notify();
-            }
+            2 => self.select_word(at, cx),
             3.. => {
                 self.selection = edit::line_start(&self.text, at)..edit::line_end(&self.text, at);
                 self.reversed = false;
@@ -374,6 +369,13 @@ impl TextInput {
                 self.move_to(at, cx);
             }
         }
+    }
+
+    /// Selects the word at `at`, as a double click or a long press does.
+    pub(super) fn select_word(&mut self, at: usize, cx: &mut Context<Self>) {
+        self.selection = edit::word_at(&self.text, at);
+        self.reversed = false;
+        cx.notify();
     }
 
     /// A right press keeps a selection it lands in.

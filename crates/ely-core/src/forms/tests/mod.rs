@@ -12,8 +12,9 @@ mod tags;
 mod upload;
 
 use gpui::{
-    AppContext as _, ClipboardItem, Context, Entity, EntityInputHandler, IntoElement, KeyUpEvent,
-    Keystroke, ParentElement, Render, TestAppContext, VisualTestContext, Window, div, px,
+    AppContext as _, ClipboardItem, Context, Entity, EntityInputHandler, InputEvent as _,
+    IntoElement, KeyUpEvent, Keystroke, LongPressEvent, ParentElement, Render, TestAppContext,
+    TouchPhase, VisualTestContext, Window, div, px,
 };
 
 use super::{Input, MaskedInput, NumberInput, PinInput, TextInput, bind_keys};
@@ -468,4 +469,42 @@ fn a_composition_shows_the_caret_as_typing_does(cx: &mut TestAppContext) {
         })
     });
     assert!(caret(cx), "a composition shows it too");
+}
+
+#[gpui::test]
+fn a_long_press_selects_the_word_and_drags_the_selection(cx: &mut TestAppContext) {
+    let (fields, cx) = open(1, false, cx);
+    fields[0].update(cx, |input, cx| input.set_text("quick select value", cx));
+    cx.run_until_parked();
+    cx.update(|window, _| window.refresh());
+    cx.run_until_parked();
+    let (start, end) = fields[0].read_with(cx, |input, _| {
+        (
+            input.bounds_for_range(1..2)[0].center(),
+            input.bounds_for_range(9..10)[0].center(),
+        )
+    });
+    for (phase, position) in [
+        (TouchPhase::Started, start),
+        (TouchPhase::Moved, end),
+        (TouchPhase::Ended, end),
+    ] {
+        cx.update(|window, cx| {
+            let press = LongPressEvent {
+                phase,
+                start_position: start,
+                position,
+            };
+            window.dispatch_event(press.to_platform_input(), cx);
+        });
+        cx.run_until_parked();
+        if phase == TouchPhase::Started {
+            assert_eq!(fields[0].read_with(cx, |input, _| input.selection()), 0..5);
+            let focused = fields[0].read_with(cx, |input, _| input.focus().clone());
+            assert!(cx.update(|window, _| focused.is_focused(window)));
+        }
+    }
+    let selection = fields[0].read_with(cx, |input, _| input.selection());
+    assert_eq!(selection.start, 0);
+    assert!(selection.end > 5, "the drag extends it: {selection:?}");
 }
