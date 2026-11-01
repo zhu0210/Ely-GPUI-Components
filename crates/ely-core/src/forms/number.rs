@@ -153,7 +153,7 @@ fn scrub_handle(
     div()
         .id(id)
         .relative()
-        .child(crate::primitives::touch_grip(Some(gpui::Axis::Horizontal)))
+        .child(crate::primitives::touch_grip())
         .cursor(CursorStyle::ResizeLeftRight)
         .on_drag(
             Scrub {

@@ -98,7 +98,7 @@ pub fn pen(
     let (press, start, moving) = (drawing.clone(), drawing.clone(), drawing.clone());
     let up = Rc::new(finish);
     let leave = up.clone();
-    pad.child(crate::primitives::touch_grip(None))
+    pad.child(crate::primitives::touch_grip())
         .on_mouse_down(MouseButton::Left, move |event, _, cx| {
             press.update(cx, |drawing, cx| {
                 drawing.stroke = vec![local(drawing.bounds, event.position)];
