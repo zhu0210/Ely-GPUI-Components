@@ -47,6 +47,8 @@ fn launch(cx: &mut App) -> Result<()> {
     pages::install_i18n(cx);
     cx.on_action(|_: &LightMode, cx| Theme::set_mode(Mode::Light, cx));
     cx.on_action(|_: &DarkMode, cx| Theme::set_mode(Mode::Dark, cx));
+    // MenuBar draws them; a phone has no menu bar of its own.
+    cx.set_menus(app_menus());
     cx.open_window(WindowOptions::default(), |_, cx| cx.new(phone::Phone::new))
         .context("gallery window failed to open")?;
     Ok(())

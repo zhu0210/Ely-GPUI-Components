@@ -25,7 +25,7 @@ pub struct Phone {
 impl Phone {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
-            page: None,
+            page: start_page(),
             focus: cx.focus_handle(),
             list: ScrollHandle::new(),
         }
@@ -151,6 +151,23 @@ impl Phone {
                     .child((page.render)(window, cx)),
             )
     }
+}
+
+/// The chapter a `gpui://gallery/<slug>` link opens on, as a capture does.
+fn start_page() -> Option<usize> {
+    let link = match gpui_mobile::packages::deeplink::get_initial_link() {
+        Ok(link) => link?,
+        Err(error) => {
+            log::error!("gallery: the launch link could not be read: {error}");
+            return None;
+        }
+    };
+    let slug = link.strip_prefix("gpui://gallery/")?;
+    let page = pages::find(slug);
+    if page.is_none() {
+        log::error!("gallery: no page {slug} for {link}");
+    }
+    page
 }
 
 impl Render for Phone {
