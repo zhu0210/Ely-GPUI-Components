@@ -98,6 +98,8 @@ pub struct TextInput {
     pub(crate) layout: Option<Layout>,
     pub(crate) scroll: Point<Pixels>,
     selecting: bool,
+    /// The edit menu a long press asked for, numbered, at the finger.
+    edit_menu: Option<(u64, Point<Pixels>)>,
     caret_on: bool,
     /// Blink runs only while focused, or unseen carets redraw forever.
     focused: bool,
@@ -157,6 +159,7 @@ impl TextInput {
             layout: None,
             scroll: Point::default(),
             selecting: false,
+            edit_menu: None,
             caret_on: true,
             focused: false,
             blink_epoch: 0,
@@ -498,6 +501,13 @@ impl TextInput {
         self.selection = offset..offset;
         self.reversed = false;
         self.restart_blink(cx);
+    }
+
+    /// Opens the edit menu at `at`, as a long press ends.
+    pub(crate) fn ask_edit_menu(&mut self, at: Point<Pixels>, cx: &mut Context<Self>) {
+        let number = self.edit_menu.map_or(1, |(number, _)| number + 1);
+        self.edit_menu = Some((number, at));
+        cx.notify();
     }
 
     pub(crate) fn select_to(&mut self, offset: usize, cx: &mut Context<Self>) {

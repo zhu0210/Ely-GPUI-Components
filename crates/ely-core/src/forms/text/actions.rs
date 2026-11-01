@@ -1,5 +1,5 @@
 use gpui::{
-    App, ClipboardItem, Context, CursorStyle, InteractiveElement, IntoElement, KeyBinding,
+    Action, App, ClipboardItem, Context, CursorStyle, InteractiveElement, IntoElement, KeyBinding,
     MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, Render, Role,
     StatefulInteractiveElement, Styled, Window, actions, div, prelude::*,
 };
@@ -9,7 +9,11 @@ use super::{
     edit::{self, next_grapheme, prev_grapheme},
     element::TextElement,
 };
-use crate::forms::structure::FORM_CONTEXT;
+use crate::{
+    forms::structure::FORM_CONTEXT,
+    i18n,
+    menus::{ContextMenu, Menu, MenuItem},
+};
 
 actions!(
     ely_input,
@@ -468,5 +472,26 @@ impl Render for TextInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .child(TextElement::new(cx.entity()))
+            .child(
+                ContextMenu::new("ely-text-edit-menu", self.edit_menu_items(cx))
+                    .manual(self.edit_menu)
+                    .absolute(),
+            )
+    }
+}
+
+impl TextInput {
+    /// What a long press offers: a phone's cut, copy, paste and select all.
+    fn edit_menu_items(&self, cx: &App) -> Menu {
+        let none = self.selection.is_empty();
+        let item = |key: &str, action: fn() -> Box<dyn Action>| {
+            MenuItem::new(i18n::text(cx, key, &[]))
+                .on_click(move |window, cx| window.dispatch_action(action(), cx))
+        };
+        Menu::new()
+            .item(item("edit.cut", || Box::new(Cut)).disabled(none))
+            .item(item("copy.button", || Box::new(Copy)).disabled(none))
+            .item(item("edit.paste", || Box::new(Paste)))
+            .item(item("edit.select_all", || Box::new(SelectAll)))
     }
 }

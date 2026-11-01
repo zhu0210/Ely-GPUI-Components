@@ -13,8 +13,8 @@ mod upload;
 
 use gpui::{
     AppContext as _, ClipboardItem, Context, Entity, EntityInputHandler, InputEvent as _,
-    IntoElement, KeyUpEvent, Keystroke, LongPressEvent, ParentElement, Render, TestAppContext,
-    TouchPhase, VisualTestContext, Window, div, px,
+    IntoElement, KeyUpEvent, Keystroke, LongPressEvent, Modifiers, ParentElement, Render,
+    TestAppContext, TouchPhase, VisualTestContext, Window, div, px,
 };
 
 use super::{Input, MaskedInput, NumberInput, PinInput, TextInput, bind_keys};
@@ -507,4 +507,36 @@ fn a_long_press_selects_the_word_and_drags_the_selection(cx: &mut TestAppContext
     let selection = fields[0].read_with(cx, |input, _| input.selection());
     assert_eq!(selection.start, 0);
     assert!(selection.end > 5, "the drag extends it: {selection:?}");
+}
+
+#[gpui::test]
+fn a_long_press_offers_copy_for_the_word_it_selected(cx: &mut TestAppContext) {
+    let (fields, cx) = open(1, false, cx);
+    fields[0].update(cx, |input, cx| input.set_text("quick select value", cx));
+    cx.run_until_parked();
+    cx.update(|window, _| window.refresh());
+    cx.run_until_parked();
+    let at = fields[0].read_with(cx, |input, _| input.bounds_for_range(1..2)[0].center());
+    for phase in [TouchPhase::Started, TouchPhase::Ended] {
+        cx.update(|window, cx| {
+            let press = LongPressEvent {
+                phase,
+                start_position: at,
+                position: at,
+            };
+            window.dispatch_event(press.to_platform_input(), cx);
+        });
+        cx.run_until_parked();
+    }
+    cx.update(|window, _| window.refresh());
+    cx.run_until_parked();
+    let copy = cx
+        .debug_bounds("menu-row-Copy")
+        .expect("the edit menu shows Copy");
+    cx.simulate_click(copy.center(), Modifiers::none());
+    cx.run_until_parked();
+    assert_eq!(
+        cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text())),
+        Some("quick".into())
+    );
 }
