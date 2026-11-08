@@ -20,8 +20,8 @@ anyhow = "1"
 # `runtime_shaders` turns on gpui_platform, the desktop platform; gpui-mobile replaces it.
 ely-gpui-component = { path = "../..", default-features = false, features = ["fonts"] }
 futures = "0.3"
-gpui = { package = "gpui-pre", version = "=0.3.10", default-features = false }
-gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "39a990e59de3e93f7ba2ee141e2de08ac1ad9da9" }
+gpui = { package = "gpui-pre", version = "=0.3.11", default-features = false }
+gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/zhu0210/gpui-mobile", rev = "d367e460e06cac0dec8266c079e000b595589e21" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 jiff = "0.2"
 log = "0.4"
